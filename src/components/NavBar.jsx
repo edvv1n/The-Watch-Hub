@@ -9,7 +9,7 @@ function NavBar() {
             <Link to="/">The Watch Hub</Link>
         </div>
         <div className='navbar-links'>
-            <Link to ="/" className='nav-link'>All Movies </Link>
+            <Link to ="/" className='nav-link'>All Movies</Link>
             <Link to ="/favorites" className='nav-link'>My Favorite Movies</Link>
         </div>
     </nav>
