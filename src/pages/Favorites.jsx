@@ -1,30 +1,5 @@
-import React from "react";
-import "../css/Favorites.css";
-import { useMovieContext } from "../contexts/MovieContext";
-import MovieCard from "../components/MovieCard";
-
-function Favorites() {
-  const { favorites } = useMovieContext();
-
-  if (favorites) {
-    return (
-      <div className="favorites">
-        <h2>Your Favorites</h2>
-        <div className="movies-grid">
-          {favorites.map((movie) => (
-            <MovieCard movie={movie} key={movie.id} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="favorites-empty">
-      <h2>No Favorite Movies Yet</h2>
-      <p>Start adding movies to your favorites and they will appear here</p>
-    </div>
-  );
-}
-
-export default Favorites;
+import {Link} from 'react-router-dom';
+import {useMovieContext} from '../contexts/MovieContext';
+import MovieCard from '../components/MovieCard';
+import {imageUrl} from '../services/api';
+export default function Favorites(){const {favorites}=useMovieContext();const backdrop=favorites.find(m=>m.backdrop_path);return <div className="page-enter"><section className="subhero" style={backdrop?{'--hero-image':`url("${imageUrl(backdrop.backdrop_path,'original')}")`}:{}}><div className="eyebrow">✦ YOUR PERSONAL COLLECTION</div><h1>Saved for <em>the spotlight.</em></h1><p>Every great movie deserves a second look.</p></section><section className="catalog"><div className="section-heading"><h2>My watchlist</h2><span className="catalog-count">{favorites.length} FILMS</span></div>{favorites.length?<div className="movies-grid">{favorites.map(m=><MovieCard key={m.id} movie={m}/>)}</div>:<div className="empty-state glass"><span>🎬</span><h2>Your watchlist is waiting.</h2><p>Tap the heart on any movie to save it here for later.</p><Link className="primary-btn" to="/">Explore movies ↗</Link></div>}</section></div>}

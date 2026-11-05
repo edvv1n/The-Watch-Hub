@@ -1,78 +1,14 @@
-import React from "react";
-import MovieCard from "../components/MovieCard";
-import { useState, useEffect } from "react";
-import { searchMovies, getPopularMovies } from "../services/api.js";
-import "../css/Home.css";
-
-function Home() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [movies, setMovies] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadPopularMovies = async () => {
-      try {
-        const popularMovies = await getPopularMovies();
-        setMovies(popularMovies);
-      } catch (err) {
-        console.log(err);
-        setError("Failed to load movies...");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadPopularMovies();
-  }, []);
-
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return
-    if (loading) return
-
-    setLoading(true)
-
-    try {
-        const searchResults = await searchMovies(searchQuery)
-        setMovies(searchResults)
-        setError(null)
-    } catch (err) {
-        setError("Failed to search movies...");
-        console.log(err)
-    } finally {
-        setLoading(false)
-    }
-
-    setSearchQuery("");
-  };
-
-  return (
-    <div className="home">
-      <form onSubmit={handleSearch} className="search-form">
-        <input
-          type="text"
-          placeholder="search for movies..."
-          className="search-input"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <button type="submit" className="search-button">
-          Search
-        </button>
-      </form>
-
-      {error && <div className="error-message">{error}</div>}
-      {loading ? (
-        <div className="loading">Loading...</div>
-      ) : (
-        <div className="movies-grid">
-          {movies.map((movie) => (
-            <MovieCard movie={movie} key={movie.id} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+import CinemaSelect from '../components/CinemaSelect';
+import {useEffect,useState} from 'react';
+import {Link,useSearchParams} from 'react-router-dom';
+import MovieCard from '../components/MovieCard';
+import {getMovies,searchMovies,getGenres,discoverMovies,imageUrl} from '../services/api';
+import {useMovieContext} from '../contexts/MovieContext';
+export default function Home(){
+ const {name}=useMovieContext(); const [params,setParams]=useSearchParams(); const query=params.get('q')||'';const [input,setInput]=useState(query);const [category,setCategory]=useState('popular');const [genre,setGenre]=useState('');const [genres,setGenres]=useState([]);const [movies,setMovies]=useState([]);const [loading,setLoading]=useState(true);const [error,setError]=useState('');
+ useEffect(()=>{getGenres().then(setGenres).catch(()=>{});},[]);
+ useEffect(()=>{let active=true;setLoading(true);setError('');const fetcher=query?searchMovies(query):genre?discoverMovies(genre):getMovies(category);fetcher.then(data=>{if(active)setMovies(data||[])}).catch(e=>{if(active)setError(e.message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false};},[query,category,genre]);
+ useEffect(()=>setInput(query),[query]);
+ const featured=movies.find(m=>m.backdrop_path)||movies[0];
+ return <div className="page-enter"><section className="hero feature-hero" style={featured?.backdrop_path?{'--hero-image':`url("${imageUrl(featured.backdrop_path,'original')}")`}:{}}><div className="hero-content feature-content"><div className="eyebrow">✦ THE WATCH HUB PRESENTS</div><div className="feature-label">{query?'YOUR SEARCH RESULTS':'TONIGHT’S FEATURE'}</div><h1>{query?'Find your next story':featured?.title||'A world of stories.'}</h1><p>{query?`Explore results for “${query}”`:featured?.overview||`Welcome back, ${name.split(' ')[0]}. Your front row seat awaits.`}</p>{featured&&!query&&<div className="feature-actions"><Link className="primary-btn" to={`/movie/${featured.id}`}>Explore movie <span className="chevron-right" aria-hidden="true"/></Link><span className="feature-rating">★ {featured.vote_average?.toFixed(1)||'—'} / 10</span></div>}</div><div className="hero-side-label">THE WATCH HUB · CINEMA REIMAGINED</div><button className="scroll-to-films" type="button" aria-label="Scroll to movie collection" onClick={()=>document.getElementById('movies')?.scrollIntoView({behavior:'smooth',block:'start'})}><span>EXPLORE THE COLLECTION</span><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 9 7 7 7-7"/></svg></button></section><section className="catalog" id="movies"><div className="section-heading"><div><div className="eyebrow">CURATED FOR YOUR SCREEN</div><h2>{query?'Search results':genre?'Explore by genre':category==='top_rated'?'Critically acclaimed':category==='upcoming'?'Coming to cinemas':'Discover your next obsession'}</h2></div><span className="catalog-count">{movies.length} FILMS</span></div><div className="filter-row"><div className="chips">{[['popular','Trending now'],['top_rated','Top rated'],['now_playing','Now playing'],['upcoming','Coming soon']].map(([value,label])=><button key={value} className={`chip ${category===value&&!genre&&!query?'selected':''}`} onClick={()=>{setCategory(value);setGenre('');setParams({})}}>{label}</button>)}</div><CinemaSelect className="genre-dropdown" label="Filter by genre" value={genre} onChange={v=>{setGenre(String(v));setParams({})}} options={[{value:"",label:"All genres"},...genres.map(g=>({value:String(g.id),label:g.name}))]}/></div>{error&&<div className="status-panel glass">{error}</div>}{loading?<div className="movies-grid">{Array.from({length:10},(_,i)=><div className="skeleton" key={i}/>)}</div>:movies.length?<div className="movies-grid">{movies.map(movie=><MovieCard key={movie.id} movie={movie}/>)}</div>:!error&&<div className="status-panel glass">No movies found. Try another search or genre.</div>}</section></div>
 }
-
-export default Home;

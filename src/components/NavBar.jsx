@@ -1,19 +1,15 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import '../css/Nav.css'
-
-function NavBar() {
-  return (
-    <nav className='navbar'>
-        <div className='navbar-brand'>
-            <Link to="/">The Watch Hub</Link>
-        </div>
-        <div className='navbar-links'>
-            <Link to ="/" className='nav-link'>All Movies</Link>
-            <Link to ="/favorites" className='nav-link'>My Favorite Movies</Link>
-        </div>
-    </nav>
-  )
+import CinemaSelect from './CinemaSelect';
+import {NavLink, Link, useNavigate, useLocation} from 'react-router-dom';
+import {useState,useEffect,useRef} from 'react';
+import {searchMovies,imageUrl} from '../services/api';
+import Logo from './Logo';
+import {useMovieContext} from '../contexts/MovieContext';
+export default function NavBar(){
+ const {name,theme,updateTheme,favorites} = useMovieContext(); const [open,setOpen]=useState(false); const [searchOpen,setSearchOpen]=useState(false); const [search,setSearch]=useState(''); const navigate=useNavigate(); const location=useLocation();
+ const [suggestions,setSuggestions]=useState([]);const [suggestLoading,setSuggestLoading]=useState(false);const searchRef=useRef(null);
+ useEffect(()=>{const term=search.trim();if(term.length<2){setSuggestions([]);setSuggestLoading(false);return;}let active=true;setSuggestLoading(true);const timer=setTimeout(()=>{searchMovies(term).then(items=>{if(active)setSuggestions((items||[]).slice(0,6))}).catch(()=>{if(active)setSuggestions([])}).finally(()=>{if(active)setSuggestLoading(false)})},280);return()=>{active=false;clearTimeout(timer)}},[search]);
+ useEffect(()=>{setSearchOpen(false);setSuggestions([])},[location.pathname,location.search]);
+ useEffect(()=>{const close=e=>{if(searchRef.current&&!searchRef.current.contains(e.target))setSearchOpen(false)};document.addEventListener('pointerdown',close);return()=>document.removeEventListener('pointerdown',close)},[]);
+ const links = <><NavLink to="/" end onClick={()=>setOpen(false)}>Discover</NavLink><NavLink to="/favorites" onClick={()=>setOpen(false)}>My watchlist <span className="count">{favorites.length}</span></NavLink></>;
+ return <header className="site-header glass"><Logo/><nav className="desktop-nav">{links}</nav><div className="header-actions"><div className="search-container" ref={searchRef}><form className={`header-search glass ${searchOpen?'expanded':''}`} role="search" onSubmit={e=>{e.preventDefault();navigate(search.trim()?`/?q=${encodeURIComponent(search.trim())}`:'/');setSearchOpen(false);setOpen(false)}}><button type="button" className="search-trigger" aria-label="Open movie search" onClick={()=>{setSearchOpen(v=>!v);if(!searchOpen)setTimeout(()=>searchRef.current?.querySelector('input')?.focus(),0)}}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 5 5"/></svg></button><input aria-label="Search movies" placeholder="Search movies…" value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setSearchOpen(true)}/><button type="submit" className="search-go" aria-label="Submit search"><span className="chevron-right"/></button></form>{searchOpen&&search.trim().length>=2&&<div className="search-suggestions glass" role="listbox" aria-label="Movie suggestions">{suggestLoading&&<div className="suggest-status">Searching movies…</div>}{!suggestLoading&&suggestions.length===0&&<div className="suggest-status">No matches yet</div>}{suggestions.map(movie=><button type="button" className="suggest-item" key={movie.id} role="option" aria-selected="false" onClick={()=>{navigate(`/movie/${movie.id}`);setSearchOpen(false);setSearch('')}}>{movie.poster_path?<img src={imageUrl(movie.poster_path,'w92')} alt=""/>:<span className="suggest-placeholder">▣</span>}<span className="suggest-copy"><strong>{movie.title}</strong><small>{movie.release_date?.slice(0,4)||'Movie'} · ★ {movie.vote_average?.toFixed(1)||'—'}</small></span><span className="chevron-right"/></button>)}<button type="button" className="suggest-all" onClick={()=>{navigate(`/?q=${encodeURIComponent(search.trim())}`);setSearchOpen(false)}}>View all results <span className="chevron-right"/></button></div>}</div><span className="hello">Hi, {name.split(' ')[0]}</span><CinemaSelect label="Appearance" value={theme} onChange={updateTheme} options={[{value:"dark",label:"Dark"},{value:"light",label:"Light"},{value:"system",label:"System"}]}/><Link className="avatar" to="/favorites" aria-label="Your watchlist">{name.charAt(0).toUpperCase()}</Link><button className="menu-toggle" aria-label="Toggle navigation" aria-expanded={open} onClick={()=>setOpen(!open)}>{open?'✕':'☰'}</button></div>{open&&<nav className="mobile-nav">{links}</nav>}</header>
 }
-
-export default NavBar
